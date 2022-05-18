@@ -229,10 +229,12 @@ void libudawaatmega328::serialReadFromESP32()
       {
         setPanic(doc);
       }
+      #ifndef SERIAL_HANDLER
       else
       {
         serialHandler(doc);
       }
+      #endif
       //serializeJson(doc, Serial);
     }
     else
@@ -439,9 +441,5 @@ void libudawaatmega328::setPanic(StaticJsonDocument<DOCSIZE> &doc)
 {
   configCoMCU.fPanic = doc["params"]["state"].as<bool>();
 }
-
-#ifndef serialHandler
-void serialHandler(StaticJsonDocument<DOCSIZE> &doc){};
-#endif
 
 #endif
