@@ -234,8 +234,8 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
     {
       //Log.error(F("SerialCoMCU DeserializeJson() returned: %s" CR), err.c_str());
     }
-    return doc;
   }
+  return doc;
 }
 
 void libudawaatmega328::setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc)
