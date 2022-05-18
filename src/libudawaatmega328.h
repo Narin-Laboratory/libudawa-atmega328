@@ -76,6 +76,7 @@ class libudawaatmega328
     int getFreeHeap();
     void getWaterEC(StaticJsonDocument<DOCSIZE> &doc);
     void getWaterTemp(StaticJsonDocument<DOCSIZE> &doc);
+    void getWaterPH(StaticJsonDocument<DOCSIZE> &doc);
     float readWaterTemp();
     void setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc);
     void setPin(StaticJsonDocument<DOCSIZE> &doc);
@@ -230,6 +231,10 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
       {
         setPanic(doc);
       }
+      else if(strcmp(method, (const char*) "getWaterPH") == 0)
+      {
+        getWaterPH(doc);
+      }
       //serializeJson(doc, Serial);
     }
     else
@@ -368,6 +373,15 @@ void libudawaatmega328::getWaterTemp(StaticJsonDocument<DOCSIZE> &doc)
   JsonObject params = doc.createNestedObject("params");
   doc["method"] = "setWaterTemp";
   params["celcius"] = readWaterTemp();
+
+  serialWriteToESP32(doc);
+}
+
+void libudawaatmega328::getWaterPH(StaticJsonDocument<DOCSIZE> &doc)
+{
+  JsonObject params = doc.createNestedObject("params");
+  doc["method"] = "setWaterPH";
+  params["waterPH"] = readWaterPH();
 
   serialWriteToESP32(doc);
 }
