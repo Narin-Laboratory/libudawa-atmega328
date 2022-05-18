@@ -363,8 +363,8 @@ float libudawaatmega328::readWaterPH()
 {
   DFRobot_PH ph;
   ph.begin();
-  float voltage = analogRead()
-  return ph.readPH(configCoMCU.pinPH, readWaterTemp());
+  float voltage = analogRead(configCoMCU.pinPH) / 1024.0 * 5000;
+  return ph.readPH(voltage, readWaterTemp());
 }
 
 void libudawaatmega328::getWaterTemp(StaticJsonDocument<DOCSIZE> &doc)
