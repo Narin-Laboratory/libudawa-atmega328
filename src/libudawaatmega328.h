@@ -91,6 +91,7 @@ class libudawaatmega328
     void runBuzzer();
     void runPanic();
     void coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc);
+    void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
     ConfigCoMCU configCoMCU;
     OneWire oneWire;
     DallasTemperature ds18b20;
@@ -227,6 +228,10 @@ void libudawaatmega328::serialReadFromESP32()
       else if(strcmp(method, (const char*) "setPanic") == 0)
       {
         setPanic(doc);
+      }
+      else
+      {
+        serialHandler(doc);
       }
       //serializeJson(doc, Serial);
     }
