@@ -85,7 +85,7 @@ class libudawaatmega328
     void setRgbLed(StaticJsonDocument<DOCSIZE> &doc);
     void setBuzzer(StaticJsonDocument<DOCSIZE> &doc);
     void serialWriteToESP32(StaticJsonDocument<DOCSIZE> &doc);
-    void serialReadFromESP32();
+    StaticJsonDocument<DOCSIZE> serialReadFromESP32();
     void setPanic(StaticJsonDocument<DOCSIZE> &doc);
     void runRgbLed();
     void runBuzzer();
@@ -138,7 +138,6 @@ void libudawaatmega328::begin()
 
 void libudawaatmega328::execute()
 {
-  serialReadFromESP32();
   runRgbLed();
   runBuzzer();
   runPanic();
@@ -182,7 +181,7 @@ void libudawaatmega328::serialWriteToESP32(StaticJsonDocument<DOCSIZE> &doc)
   serializeJson(doc, Serial);
 }
 
-void libudawaatmega328::serialReadFromESP32()
+StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
 {
   StaticJsonDocument<DOCSIZE> doc;
 
@@ -229,18 +228,13 @@ void libudawaatmega328::serialReadFromESP32()
       {
         setPanic(doc);
       }
-      #ifndef SERIAL_HANDLER
-      else
-      {
-        serialHandler(doc);
-      }
-      #endif
       //serializeJson(doc, Serial);
     }
     else
     {
       //Log.error(F("SerialCoMCU DeserializeJson() returned: %s" CR), err.c_str());
     }
+    return doc;
   }
 }
 
