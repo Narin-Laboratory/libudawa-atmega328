@@ -13,6 +13,7 @@
 #include <ArduinoLog.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#inlucde "DFRobot_PH.h"
 
 #define DOCSIZE 512
 #define countof(a) (sizeof(a) / sizeof(a[0]))
@@ -62,6 +63,7 @@ struct ConfigCoMCU
   uint8_t pinEcPower;
   uint8_t pinEcGnd;
   uint8_t pinEcData;
+  uint8_t pinPH;
 };
 
 class libudawaatmega328
@@ -76,6 +78,7 @@ class libudawaatmega328
     void getWaterEC(StaticJsonDocument<DOCSIZE> &doc);
     void getWaterTemp(StaticJsonDocument<DOCSIZE> &doc);
     float readWaterTemp();
+    float readWaterPH();
     void setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc);
     void setPin(StaticJsonDocument<DOCSIZE> &doc);
     int getPin(StaticJsonDocument<DOCSIZE> &doc);
@@ -354,6 +357,14 @@ float libudawaatmega328::readWaterTemp()
   ds18b20.requestTemperatures();
   float celcius = ds18b20.getTempCByIndex(0);
   return celcius;
+}
+
+float libudawaatmega328::readWaterPH()
+{
+  DFRobot_PH ph;
+  ph.begin();
+  float voltage = analogRead()
+  return ph.readPH(configCoMCU.pinPH, readWaterTemp());
 }
 
 void libudawaatmega328::getWaterTemp(StaticJsonDocument<DOCSIZE> &doc)
