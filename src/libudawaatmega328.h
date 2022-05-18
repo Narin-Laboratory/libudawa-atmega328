@@ -18,7 +18,6 @@
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 #define COMPILED __DATE__ " " __TIME__
 #define BOARD "nanoatmega328new"
-#define ONE_WIRE_BUS 2
 
 struct Led
 {
@@ -55,6 +54,8 @@ struct ConfigCoMCU
   uint16_t bfreq;
   bool fBuzz;
 
+  uint8_t pin1Wire;
+
   uint8_t pinBuzzer;
   uint8_t pinLedR;
   uint8_t pinLedG;
@@ -62,7 +63,7 @@ struct ConfigCoMCU
   uint8_t pinEcPower;
   uint8_t pinEcGnd;
   uint8_t pinEcData;
-  uint8_t pinPH;
+
 };
 
 class libudawaatmega328
@@ -105,7 +106,7 @@ class libudawaatmega328
 libudawaatmega328::libudawaatmega328()
 {
   _buzzer.lastState = 1;
-  oneWire = OneWire(ONE_WIRE_BUS);
+  oneWire = OneWire(configCoMCU.pin1Wire);
   ds18b20 = DallasTemperature(&oneWire);
 }
 
@@ -128,6 +129,8 @@ void libudawaatmega328::begin()
 
   configCoMCU.bfreq = 1600;
   configCoMCU.fBuzz = true;
+
+  configCoMCU.pin1Wire = 2;
 
   configCoMCU.pinBuzzer = 3;
   configCoMCU.pinLedR =  9;
@@ -253,6 +256,8 @@ void libudawaatmega328::setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc)
 
   if(doc["bfreq"] != nullptr){configCoMCU.bfreq = doc["bfreq"].as<uint16_t>();}
   if(doc["fBuzz"] != nullptr){configCoMCU.fBuzz = doc["fBuzz"].as<bool>();}
+
+  if(doc["pin1Wire"] != nullptr){configCoMCU.pin1Wire = doc["pin1Wire"].as<uint8_t>();}
 
   if(doc["pinBuzzer"] != nullptr){configCoMCU.pinBuzzer = doc["pinBuzzer"].as<uint8_t>();}
   if(doc["pinLedR"] != nullptr){configCoMCU.pinLedR = doc["pinLedR"].as<uint8_t>();}
