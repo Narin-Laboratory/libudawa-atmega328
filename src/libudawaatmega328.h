@@ -440,4 +440,8 @@ void libudawaatmega328::setPanic(StaticJsonDocument<DOCSIZE> &doc)
   configCoMCU.fPanic = doc["params"]["state"].as<bool>();
 }
 
+#ifndef serialHandler
+void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
+#endif
+
 #endif
