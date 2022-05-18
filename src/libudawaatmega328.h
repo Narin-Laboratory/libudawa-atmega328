@@ -13,7 +13,7 @@
 #include <ArduinoLog.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#inlucde "DFRobot_PH.h"
+#include "DFRobot_PH.h"
 
 #define DOCSIZE 512
 #define countof(a) (sizeof(a) / sizeof(a[0]))
