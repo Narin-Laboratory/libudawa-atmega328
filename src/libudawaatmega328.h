@@ -13,9 +13,8 @@
 #include <ArduinoLog.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include "DFRobot_PH.h"
 
-#define DOCSIZE 512
+#define DOCSIZE 128
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 #define COMPILED __DATE__ " " __TIME__
 #define BOARD "nanoatmega328new"
@@ -78,7 +77,6 @@ class libudawaatmega328
     void getWaterEC(StaticJsonDocument<DOCSIZE> &doc);
     void getWaterTemp(StaticJsonDocument<DOCSIZE> &doc);
     float readWaterTemp();
-    float readWaterPH();
     void setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc);
     void setPin(StaticJsonDocument<DOCSIZE> &doc);
     int getPin(StaticJsonDocument<DOCSIZE> &doc);
@@ -115,6 +113,10 @@ void libudawaatmega328::begin()
 {
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+
+  Serial.print("{\"compiled\": \"");
+  Serial.print(COMPILED);
+  Serial.print("\"}");
 
   configCoMCU.fPanic = false;
   configCoMCU.pEcKcoe = 2.9;
@@ -359,14 +361,6 @@ float libudawaatmega328::readWaterTemp()
   ds18b20.requestTemperatures();
   float celcius = ds18b20.getTempCByIndex(0);
   return celcius;
-}
-
-float libudawaatmega328::readWaterPH()
-{
-  DFRobot_PH ph;
-  ph.begin();
-  float voltage = analogRead(configCoMCU.pinPH) / 1024.0 * 5000;
-  return ph.readPH(voltage, readWaterTemp());
 }
 
 void libudawaatmega328::getWaterTemp(StaticJsonDocument<DOCSIZE> &doc)
