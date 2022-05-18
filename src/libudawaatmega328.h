@@ -77,6 +77,7 @@ class libudawaatmega328
     int getFreeHeap();
     void getWaterEC(StaticJsonDocument<DOCSIZE> &doc);
     void getWaterTemp(StaticJsonDocument<DOCSIZE> &doc);
+    void getWaterPH(StaticJsonDocument<DOCSIZE> &doc);
     float readWaterTemp();
     float readWaterPH();
     void setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc);
