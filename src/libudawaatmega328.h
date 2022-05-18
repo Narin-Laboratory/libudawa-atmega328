@@ -441,7 +441,7 @@ void libudawaatmega328::setPanic(StaticJsonDocument<DOCSIZE> &doc)
 }
 
 #ifndef serialHandler
-void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
+void serialHandler(StaticJsonDocument<DOCSIZE> &doc){};
 #endif
 
 #endif
