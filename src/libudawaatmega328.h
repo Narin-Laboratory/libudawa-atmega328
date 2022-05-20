@@ -115,10 +115,6 @@ void libudawaatmega328::begin()
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  Serial.print("{\"compiled\": \"");
-  Serial.print(COMPILED);
-  Serial.print("\"}");
-
   configCoMCU.fPanic = false;
   configCoMCU.pEcKcoe = 2.9;
   configCoMCU.pEcTcoe = 0.019;
