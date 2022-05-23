@@ -106,8 +106,6 @@ class libudawaatmega328
 libudawaatmega328::libudawaatmega328()
 {
   _buzzer.lastState = 1;
-  oneWire = OneWire(configCoMCU.pin1Wire);
-  ds18b20 = DallasTemperature(&oneWire);
 }
 
 void libudawaatmega328::begin()
@@ -135,6 +133,9 @@ void libudawaatmega328::begin()
   configCoMCU.pinEcPower =  15;
   configCoMCU.pinEcGnd =  16;
   configCoMCU.pinEcData = 14;
+  
+  oneWire = OneWire(configCoMCU.pin1Wire);
+  ds18b20 = DallasTemperature(&oneWire);
 }
 
 void libudawaatmega328::execute()
