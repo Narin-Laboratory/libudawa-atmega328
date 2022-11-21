@@ -44,40 +44,22 @@ struct Buzzer
 struct ConfigCoMCU
 {
   bool fPanic;
-  float pEcKcoe;
-  float pEcTcoe;
-  float pEcVin;
-  float pEcPpm;
-  uint16_t pEcR1;
-  uint16_t pEcRa;
-
   uint16_t bfreq;
   bool fBuzz;
-
-  uint8_t pin1Wire;
-
   uint8_t pinBuzzer;
   uint8_t pinLedR;
   uint8_t pinLedG;
   uint8_t pinLedB;
-  uint8_t pinEcPower;
-  uint8_t pinEcGnd;
-  uint8_t pinEcData;
-
 };
 
 class libudawaatmega328
 {
   public:
     libudawaatmega328();
-    libudawaatmega328(const char *configMainFile, const char *configRoutineFile);
     void begin();
     void execute();
     int getFreeHeap(uint16_t min,uint16_t max);
     int getFreeHeap();
-    void getWaterEC(StaticJsonDocument<DOCSIZE> &doc);
-    void getWaterTemp(StaticJsonDocument<DOCSIZE> &doc);
-    float readWaterTemp();
     void setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc);
     void setPin(StaticJsonDocument<DOCSIZE> &doc);
     int getPin(StaticJsonDocument<DOCSIZE> &doc);
@@ -92,8 +74,6 @@ class libudawaatmega328
     void coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc);
     void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
     ConfigCoMCU configCoMCU;
-    OneWire oneWire;
-    DallasTemperature ds18b20;
   private:
     bool _toBoolean(String &value);
     void _serialCommandHandler(HardwareSerial &serial);
@@ -114,28 +94,14 @@ void libudawaatmega328::begin()
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
   configCoMCU.fPanic = false;
-  configCoMCU.pEcKcoe = 2.9;
-  configCoMCU.pEcTcoe = 0.019;
-  configCoMCU.pEcVin = 4.54;
-  configCoMCU.pEcPpm = 0.5;
-  configCoMCU.pEcR1 = 1000;
-  configCoMCU.pEcRa = 25;
 
   configCoMCU.bfreq = 1600;
   configCoMCU.fBuzz = true;
 
-  configCoMCU.pin1Wire = 2;
-
-  configCoMCU.pinBuzzer = 3;
+  configCoMCU.pinBuzzer = 13;
   configCoMCU.pinLedR =  9;
   configCoMCU.pinLedG =  10;
   configCoMCU.pinLedB =  11;
-  configCoMCU.pinEcPower =  15;
-  configCoMCU.pinEcGnd =  16;
-  configCoMCU.pinEcData = 14;
-  
-  oneWire = OneWire(configCoMCU.pin1Wire);
-  ds18b20 = DallasTemperature(&oneWire);
 }
 
 void libudawaatmega328::execute()
@@ -202,14 +168,6 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
       {
         setConfigCoMCU(doc);
       }
-      else if(strcmp(method, (const char*) "getWaterTemp") == 0)
-      {
-        getWaterTemp(doc);
-      }
-      else if(strcmp(method, (const char*) "getWaterEC") == 0)
-      {
-        getWaterEC(doc);
-      }
       else if(strcmp(method, (const char*) "setRgbLed") == 0)
       {
         setRgbLed(doc);
@@ -244,25 +202,14 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
 void libudawaatmega328::setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc)
 {
   if(doc["fPanic"] != nullptr){configCoMCU.fPanic = doc["fPanic"].as<bool>();}
-  if(doc["pEcKcoe"] != nullptr){configCoMCU.pEcKcoe = doc["pEcKcoe"].as<float>();}
-  if(doc["pEcTcoe"] != nullptr){configCoMCU.pEcTcoe = doc["pEcTcoe"].as<float>();}
-  if(doc["pEcVin"] != nullptr){configCoMCU.pEcVin = doc["pEcVin"].as<float>();}
-  if(doc["pEcPpm"] != nullptr){configCoMCU.pEcPpm = doc["pEcPpm"].as<float>();}
-  if(doc["pEcR1"] != nullptr){configCoMCU.pEcR1 = doc["pEcR1"].as<unsigned int>();}
-  if(doc["pEcRa"] != nullptr){configCoMCU.pEcRa = doc["pEcRa"].as<unsigned int>();}
 
   if(doc["bfreq"] != nullptr){configCoMCU.bfreq = doc["bfreq"].as<uint16_t>();}
   if(doc["fBuzz"] != nullptr){configCoMCU.fBuzz = doc["fBuzz"].as<bool>();}
-
-  if(doc["pin1Wire"] != nullptr){configCoMCU.pin1Wire = doc["pin1Wire"].as<uint8_t>();}
 
   if(doc["pinBuzzer"] != nullptr){configCoMCU.pinBuzzer = doc["pinBuzzer"].as<uint8_t>();}
   if(doc["pinLedR"] != nullptr){configCoMCU.pinLedR = doc["pinLedR"].as<uint8_t>();}
   if(doc["pinLedG"] != nullptr){configCoMCU.pinLedG = doc["pinLedG"].as<uint8_t>();}
   if(doc["pinLedB"] != nullptr){configCoMCU.pinLedB = doc["pinLedB"].as<uint8_t>();}
-  if(doc["pinEcPower"] != nullptr){configCoMCU.pinEcPower = doc["pinEcPower"].as<uint8_t>();}
-  if(doc["pinEcGnd"] != nullptr){configCoMCU.pinEcGnd = doc["pinEcGnd"].as<uint8_t>();}
-  if(doc["pinEcData"] != nullptr){configCoMCU.pinEcData = doc["pinEcData"].as<uint8_t>();}
 }
 
 void libudawaatmega328::setPin(StaticJsonDocument<DOCSIZE> &doc)
@@ -355,60 +302,6 @@ void libudawaatmega328::runBuzzer()
     _buzzer.lastState = !_buzzer.lastState;
     _buzzer.lastRun = now;
   }
-}
-
-float libudawaatmega328::readWaterTemp()
-{
-  ds18b20.requestTemperatures();
-  float celcius = ds18b20.getTempCByIndex(0);
-  return celcius;
-}
-
-void libudawaatmega328::getWaterTemp(StaticJsonDocument<DOCSIZE> &doc)
-{
-  JsonObject params = doc.createNestedObject("params");
-  doc["method"] = "setWaterTemp";
-  params["celcius"] = readWaterTemp();
-
-  serialWriteToESP32(doc);
-}
-
-void libudawaatmega328::getWaterEC(StaticJsonDocument<DOCSIZE> &doc)
-{
-  pinMode(configCoMCU.pinEcPower, OUTPUT);
-  pinMode(configCoMCU.pinEcGnd, OUTPUT);
-  pinMode(configCoMCU.pinEcData, INPUT);
-
-  float ec = 0;
-  float ec25 = 0;
-  int ppm = 0;
-  float raw = 0;
-  float voltageDrop = 0;
-  float rc = 0;
-  float waterTemp = readWaterTemp();
-
-  digitalWrite(configCoMCU.pinEcPower, HIGH);
-  raw = analogRead(configCoMCU.pinEcData);
-  raw = analogRead(configCoMCU.pinEcData);
-  digitalWrite(configCoMCU.pinEcPower, LOW);
-
-  voltageDrop = (configCoMCU.pEcVin * raw) / 1024.0;
-  rc =(voltageDrop * configCoMCU.pEcR1) / (configCoMCU.pEcVin - voltageDrop);
-  rc = rc - configCoMCU.pEcRa;
-  ec = 1000 / (rc * configCoMCU.pEcKcoe);
-
-  ec25  =  ec / (1 + configCoMCU.pEcTcoe * (waterTemp - 25.0));
-  ppm =(ec25) * (configCoMCU.pEcPpm * 1000);
-
-  JsonObject params = doc.createNestedObject("params");
-  doc["method"] = "setWaterEC";
-  params["waterEC"] = ec25;
-  params["waterPPM"] = ppm;
-  params["waterTemp"] = waterTemp;
-  params["vDrop"] = voltageDrop;
-  params["_ec"] = ec;
-  params["raw"] = raw;
-  serialWriteToESP32(doc);
 }
 
 void libudawaatmega328::runPanic()
