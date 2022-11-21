@@ -73,7 +73,7 @@ class libudawaatmega328
     void runPanic();
     void coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc);
     void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
-    ConfigCoMCU configCoMCU;
+    ConfigCoMCU configcomcu;
   private:
     bool _toBoolean(String &value);
     void _serialCommandHandler(HardwareSerial &serial);
@@ -93,15 +93,15 @@ void libudawaatmega328::begin()
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  configCoMCU.fPanic = false;
+  configcomcu.fPanic = false;
 
-  configCoMCU.bfreq = 1600;
-  configCoMCU.fBuzz = true;
+  configcomcu.bfreq = 1600;
+  configcomcu.fBuzz = true;
 
-  configCoMCU.pinBuzzer = 13;
-  configCoMCU.pinLedR =  9;
-  configCoMCU.pinLedG =  10;
-  configCoMCU.pinLedB =  11;
+  configcomcu.pinBuzzer = 13;
+  configcomcu.pinLedR =  9;
+  configcomcu.pinLedG =  10;
+  configcomcu.pinLedB =  11;
 }
 
 void libudawaatmega328::execute()
@@ -201,15 +201,15 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
 
 void libudawaatmega328::setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc)
 {
-  if(doc["fPanic"] != nullptr){configCoMCU.fPanic = doc["fPanic"].as<bool>();}
+  if(doc["fPanic"] != nullptr){configcomcu.fPanic = doc["fPanic"].as<bool>();}
 
-  if(doc["bfreq"] != nullptr){configCoMCU.bfreq = doc["bfreq"].as<uint16_t>();}
-  if(doc["fBuzz"] != nullptr){configCoMCU.fBuzz = doc["fBuzz"].as<bool>();}
+  if(doc["bfreq"] != nullptr){configcomcu.bfreq = doc["bfreq"].as<uint16_t>();}
+  if(doc["fBuzz"] != nullptr){configcomcu.fBuzz = doc["fBuzz"].as<bool>();}
 
-  if(doc["pinBuzzer"] != nullptr){configCoMCU.pinBuzzer = doc["pinBuzzer"].as<uint8_t>();}
-  if(doc["pinLedR"] != nullptr){configCoMCU.pinLedR = doc["pinLedR"].as<uint8_t>();}
-  if(doc["pinLedG"] != nullptr){configCoMCU.pinLedG = doc["pinLedG"].as<uint8_t>();}
-  if(doc["pinLedB"] != nullptr){configCoMCU.pinLedB = doc["pinLedB"].as<uint8_t>();}
+  if(doc["pinBuzzer"] != nullptr){configcomcu.pinBuzzer = doc["pinBuzzer"].as<uint8_t>();}
+  if(doc["pinLedR"] != nullptr){configcomcu.pinLedR = doc["pinLedR"].as<uint8_t>();}
+  if(doc["pinLedG"] != nullptr){configcomcu.pinLedG = doc["pinLedG"].as<uint8_t>();}
+  if(doc["pinLedB"] != nullptr){configcomcu.pinLedB = doc["pinLedB"].as<uint8_t>();}
 }
 
 void libudawaatmega328::setPin(StaticJsonDocument<DOCSIZE> &doc)
@@ -263,22 +263,22 @@ void libudawaatmega328::runRgbLed()
   uint32_t now = millis();
   if(!_rgb.isBlink)
   {
-    analogWrite(configCoMCU.pinLedR, _rgb.r);
-    analogWrite(configCoMCU.pinLedG, _rgb.g);
-    analogWrite(configCoMCU.pinLedB, _rgb.b);
+    analogWrite(configcomcu.pinLedR, _rgb.r);
+    analogWrite(configcomcu.pinLedG, _rgb.g);
+    analogWrite(configcomcu.pinLedB, _rgb.b);
   }
   else if(_rgb.blinkCount > 0 && now - _rgb.lastRun > _rgb.blinkDelay){
     if(_rgb.lastState == 1){
-      analogWrite(configCoMCU.pinLedR, _rgb.r);
-      analogWrite(configCoMCU.pinLedG, _rgb.g);
-      analogWrite(configCoMCU.pinLedB, _rgb.b);
+      analogWrite(configcomcu.pinLedR, _rgb.r);
+      analogWrite(configcomcu.pinLedG, _rgb.g);
+      analogWrite(configcomcu.pinLedB, _rgb.b);
 
       _rgb.blinkCount--;
     }
     else{
-      analogWrite(configCoMCU.pinLedR, _rgb.off);
-      analogWrite(configCoMCU.pinLedG, _rgb.off);
-      analogWrite(configCoMCU.pinLedB, _rgb.off);
+      analogWrite(configcomcu.pinLedR, _rgb.off);
+      analogWrite(configcomcu.pinLedG, _rgb.off);
+      analogWrite(configcomcu.pinLedB, _rgb.off);
     }
 
     _rgb.lastState = !_rgb.lastState;
@@ -292,11 +292,11 @@ void libudawaatmega328::runBuzzer()
   if(_buzzer.beepCount > 0 && now - _buzzer.lastRun > _buzzer.beepDelay)
   {
     if(_buzzer.lastState == 1){
-      tone(configCoMCU.pinBuzzer, configCoMCU.bfreq, _buzzer.beepDelay);
+      tone(configcomcu.pinBuzzer, configcomcu.bfreq, _buzzer.beepDelay);
       _buzzer.beepCount--;
     }
     else{
-      noTone(configCoMCU.pinBuzzer);
+      noTone(configcomcu.pinBuzzer);
     }
 
     _buzzer.lastState = !_buzzer.lastState;
@@ -306,7 +306,7 @@ void libudawaatmega328::runBuzzer()
 
 void libudawaatmega328::runPanic()
 {
-  if(configCoMCU.fPanic)
+  if(configcomcu.fPanic)
   {
     _rgb.r = 0;
     _rgb.g = 255;
@@ -322,7 +322,7 @@ void libudawaatmega328::runPanic()
 
 void libudawaatmega328::setPanic(StaticJsonDocument<DOCSIZE> &doc)
 {
-  configCoMCU.fPanic = doc["params"]["state"].as<bool>();
+  configcomcu.fPanic = doc["params"]["state"].as<bool>();
 }
 
 #endif
