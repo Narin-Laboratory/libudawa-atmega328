@@ -215,10 +215,10 @@ void libudawaatmega328::setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc)
 void libudawaatmega328::setPin(StaticJsonDocument<DOCSIZE> &doc)
 {
   pinMode(doc["params"]["pin"].as<uint8_t>(), doc["params"]["mode"].as<uint8_t>());
-  if(doc["params"]["type"].as<char>() == 'A'){
+  if(doc["params"]["op"].as<uint8_t>() == 0){
     analogWrite(doc["params"]["pin"].as<uint8_t>(), doc["params"]["aval"].as<uint16_t>());
   }
-  else if(doc["params"]["type"].as<char>() == 'D'){
+  else if(doc["params"]["op"].as<uint8_t>() == 1){
     digitalWrite(doc["params"]["pin"].as<uint8_t>(), doc["params"]["state"].as<uint8_t>());
   }
 }
