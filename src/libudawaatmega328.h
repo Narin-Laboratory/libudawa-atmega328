@@ -215,12 +215,12 @@ void libudawaatmega328::setPin(StaticJsonDocument<DOCSIZE> &doc)
 int libudawaatmega328::getPin(StaticJsonDocument<DOCSIZE> &doc)
 {
   int state;
-  if(doc["params"]["type"].as<char>() == 'A')
+  if(doc["params"]["op"].as<uint8_t>() == 0)
   {
     state = analogRead(doc["params"]["pin"].as<uint8_t>());
     doc["params"]["state"] = state;
   }
-  else if(doc["params"]["type"].as<char>() == 'D')
+  else if(doc["params"]["op"].as<uint8_t>() == 1)
   {
     state = digitalRead(doc["params"]["pin"].as<uint8_t>());
     doc["params"]["state"] = state;
