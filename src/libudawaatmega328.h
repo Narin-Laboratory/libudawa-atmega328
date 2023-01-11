@@ -11,8 +11,6 @@
 #include "Arduino.h"
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 
 #define DOCSIZE 128
 #define countof(a) (sizeof(a) / sizeof(a[0]))
@@ -43,13 +41,13 @@ struct Buzzer
 
 struct ConfigCoMCU
 {
-  bool fPanic;
-  uint16_t bfreq;
-  bool fBuzz;
-  uint8_t pinBuzzer;
-  uint8_t pinLedR;
-  uint8_t pinLedG;
-  uint8_t pinLedB;
+  bool fPanic = false;
+  uint16_t bfreq = 1600;
+  bool fBuzz = true;
+  uint8_t pinBuzzer = 2;
+  uint8_t pinLedR = 3;
+  uint8_t pinLedG = 5;
+  uint8_t pinLedB = 6;
 };
 
 class libudawaatmega328
@@ -93,15 +91,6 @@ void libudawaatmega328::begin()
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  configcomcu.fPanic = false;
-
-  configcomcu.bfreq = 1600;
-  configcomcu.fBuzz = true;
-
-  configcomcu.pinBuzzer = 13;
-  configcomcu.pinLedR =  9;
-  configcomcu.pinLedG =  10;
-  configcomcu.pinLedB =  11;
 }
 
 void libudawaatmega328::execute()
