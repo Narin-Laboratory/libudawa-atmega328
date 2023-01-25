@@ -11,33 +11,14 @@
 #include "Arduino.h"
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
+#include "EasyBuzzer.h"
 
-#define DOCSIZE 128
+#ifndef DOCSIZE
+  #define DOCSIZE 128
+#endif
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 #define COMPILED __DATE__ " " __TIME__
 #define BOARD "nanoatmega328new"
-
-struct Led
-{
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-  bool isBlink;
-  uint16_t blinkCount;
-  uint16_t blinkDelay;
-  uint32_t lastRun;
-  uint8_t lastState = 1;
-  uint8_t off = 255;
-  uint8_t on = 0;
-};
-
-struct Buzzer
-{
-  uint16_t beepCount;
-  uint16_t beepDelay;
-  uint32_t lastRun;
-  bool lastState;
-};
 
 struct ConfigCoMCU
 {
@@ -66,43 +47,35 @@ class libudawaatmega328
     void serialWriteToESP32(StaticJsonDocument<DOCSIZE> &doc);
     StaticJsonDocument<DOCSIZE> serialReadFromESP32();
     void setPanic(StaticJsonDocument<DOCSIZE> &doc);
-    void runRgbLed();
-    void runBuzzer();
-    void runPanic();
     void coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc);
     void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
     ConfigCoMCU configcomcu;
   private:
     bool _toBoolean(String &value);
     void _serialCommandHandler(HardwareSerial &serial);
-    Led _rgb;
-    Buzzer _buzzer;
 };
 
 
 
 libudawaatmega328::libudawaatmega328()
 {
-  _buzzer.lastState = 1;
+
 }
 
 void libudawaatmega328::begin()
 {
   Serial.begin(115200);
+  Serial.setTimeout(30000);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-
 }
 
 void libudawaatmega328::execute()
 {
-  runRgbLed();
-  runBuzzer();
-  runPanic();
+  EasyBuzzer.update();
 }
 
 void libudawaatmega328::coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc)
 {
-  doc["method"] = "coMCUSetInfo";
   doc["board"] = BOARD;
   doc["fwv"] = COMPILED;
   doc["heap"] = getFreeHeap();
@@ -144,45 +117,45 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
 
   if (Serial.available())
   {
-    DeserializationError err = deserializeJson(doc, Serial);
+    const auto deser_err = deserializeJson(doc, Serial);;
 
-    if (err == DeserializationError::Ok)
+    if (deser_err)
     {
-      const char* method = doc["method"].as<const char*>();
-      if(strcmp(method, (const char*) "coMCUGetInfo") == 0)
-      {
-        coMCUGetInfo(doc);
-      }
-      else if(strcmp(method, (const char*) "setConfigCoMCU") == 0)
-      {
-        setConfigCoMCU(doc);
-      }
-      else if(strcmp(method, (const char*) "setRgbLed") == 0)
-      {
-        setRgbLed(doc);
-      }
-      else if(strcmp(method, (const char*) "setBuzzer") == 0)
-      {
-        setBuzzer(doc);
-      }
-      else if(strcmp(method, (const char*) "setPin") == 0)
-      {
-        setPin(doc);
-      }
-      else if(strcmp(method, (const char*) "getPin") == 0)
-      {
-        getPin(doc);
-      }
-      else if(strcmp(method, (const char*) "setPanic") == 0)
-      {
-        setPanic(doc);
-      }
-      //serializeJson(doc, Serial);
+      doc["err"] = 1;
+      Log.error(F("SerialCoMCU DeserializeJson() returned: %s" CR), deser_err.c_str());
     }
     else
     {
-      doc["err"] = 1;
-      //Log.error(F("SerialCoMCU DeserializeJson() returned: %s" CR), err.c_str());
+      const char* method = doc["method"].as<const char*>();
+      if(strcmp(method, (const char*) "gInf") == 0)
+      {
+        coMCUGetInfo(doc);
+      }
+      else if(strcmp(method, (const char*) "sCfg") == 0)
+      {
+        setConfigCoMCU(doc);
+      }
+      else if(strcmp(method, (const char*) "sLed") == 0)
+      {
+        setRgbLed(doc);
+      }
+      else if(strcmp(method, (const char*) "sBuz") == 0)
+      {
+        setBuzzer(doc);
+      }
+      else if(strcmp(method, (const char*) "sPin") == 0)
+      {
+        setPin(doc);
+      }
+      else if(strcmp(method, (const char*) "gPin") == 0)
+      {
+        getPin(doc);
+      }
+      else if(strcmp(method, (const char*) "sPnc") == 0)
+      {
+        setPanic(doc);
+      }
+      //serializeJsonPretty(doc, Serial);
     }
   }
   return doc;
@@ -199,6 +172,8 @@ void libudawaatmega328::setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc)
   if(doc["pinLedR"] != nullptr){configcomcu.pinLedR = doc["pinLedR"].as<uint8_t>();}
   if(doc["pinLedG"] != nullptr){configcomcu.pinLedG = doc["pinLedG"].as<uint8_t>();}
   if(doc["pinLedB"] != nullptr){configcomcu.pinLedB = doc["pinLedB"].as<uint8_t>();}
+
+  EasyBuzzer.setPin(configcomcu.pinBuzzer);
 }
 
 void libudawaatmega328::setPin(StaticJsonDocument<DOCSIZE> &doc)
@@ -231,87 +206,23 @@ int libudawaatmega328::getPin(StaticJsonDocument<DOCSIZE> &doc)
 
 void libudawaatmega328::setRgbLed(StaticJsonDocument<DOCSIZE> &doc)
 {
-  _rgb.r = doc["params"]["r"].as<uint8_t>();
-  _rgb.g = doc["params"]["g"].as<uint8_t>();
-  _rgb.b = doc["params"]["b"].as<uint8_t>();
-  _rgb.isBlink = doc["params"]["isBlink"].as<uint8_t>();
-  _rgb.blinkCount = doc["params"]["blinkCount"].as<uint16_t>();
-  _rgb.blinkDelay = doc["params"]["blinkDelay"].as<uint16_t>();
-  _rgb.off = doc["params"]["off"].as<uint8_t>();
-  _rgb.on = doc["params"]["on"].as<uint8_t>();
+
 }
 
 void libudawaatmega328::setBuzzer(StaticJsonDocument<DOCSIZE>& doc)
 {
-  _buzzer.beepCount = doc["params"]["beepCount"].as<uint16_t>();
-  _buzzer.beepDelay = doc["params"]["beepDelay"].as<uint16_t>();
+
 }
 
-void libudawaatmega328::runRgbLed()
-{
-  uint32_t now = millis();
-  if(!_rgb.isBlink)
-  {
-    analogWrite(configcomcu.pinLedR, _rgb.r);
-    analogWrite(configcomcu.pinLedG, _rgb.g);
-    analogWrite(configcomcu.pinLedB, _rgb.b);
-  }
-  else if(_rgb.blinkCount > 0 && now - _rgb.lastRun > _rgb.blinkDelay){
-    if(_rgb.lastState == 1){
-      analogWrite(configcomcu.pinLedR, _rgb.r);
-      analogWrite(configcomcu.pinLedG, _rgb.g);
-      analogWrite(configcomcu.pinLedB, _rgb.b);
-
-      _rgb.blinkCount--;
-    }
-    else{
-      analogWrite(configcomcu.pinLedR, _rgb.off);
-      analogWrite(configcomcu.pinLedG, _rgb.off);
-      analogWrite(configcomcu.pinLedB, _rgb.off);
-    }
-
-    _rgb.lastState = !_rgb.lastState;
-    _rgb.lastRun = now;
-  }
-}
-
-void libudawaatmega328::runBuzzer()
-{
-  uint32_t now = millis();
-  if(_buzzer.beepCount > 0 && now - _buzzer.lastRun > _buzzer.beepDelay)
-  {
-    if(_buzzer.lastState == 1){
-      tone(configcomcu.pinBuzzer, configcomcu.bfreq, _buzzer.beepDelay);
-      _buzzer.beepCount--;
-    }
-    else{
-      noTone(configcomcu.pinBuzzer);
-    }
-
-    _buzzer.lastState = !_buzzer.lastState;
-    _buzzer.lastRun = now;
-  }
-}
-
-void libudawaatmega328::runPanic()
-{
-  if(configcomcu.fPanic)
-  {
-    _rgb.r = 0;
-    _rgb.g = 255;
-    _rgb.b = 255;
-    _rgb.isBlink = 1;
-    _rgb.blinkCount = 10;
-    _rgb.blinkDelay = 100;
-
-    _buzzer.beepCount = 10;
-    _buzzer.beepDelay = 100;
-  }
-}
 
 void libudawaatmega328::setPanic(StaticJsonDocument<DOCSIZE> &doc)
 {
   configcomcu.fPanic = doc["params"]["state"].as<bool>();
+  if(configcomcu.fPanic){
+    EasyBuzzer.beep(configcomcu.bfreq);
+  }else{
+    EasyBuzzer.stopBeep();
+  }
 }
 
 #endif
