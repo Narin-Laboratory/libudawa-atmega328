@@ -51,6 +51,7 @@ class libudawaatmega328
     void coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc);
     void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
     ConfigCoMCU configcomcu;
+    RGBLed led;
 
   private:
     bool _toBoolean(String &value);
@@ -61,7 +62,7 @@ class libudawaatmega328
 
 libudawaatmega328::libudawaatmega328()
 {
-  RGBLed led(configcomcu.pinLedR, configcomcu.pinLedG, configcomcu.pinLedB, RGBLed::COMMON_CATHODE);
+
 }
 
 void libudawaatmega328::begin()
@@ -70,6 +71,7 @@ void libudawaatmega328::begin()
   Serial.setTimeout(30000);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
   EasyBuzzer.setPin(configcomcu.pinBuzzer);
+  led.begin(configcomcu.pinLedR,configcomcu.pinLedG,configcomcu.pinLedB, RGBLed::COMMON_CATHODE);
 }
 
 void libudawaatmega328::execute()
@@ -209,7 +211,6 @@ int libudawaatmega328::getPin(StaticJsonDocument<DOCSIZE> &doc)
 
 void libudawaatmega328::setRgbLed(StaticJsonDocument<DOCSIZE> &doc)
 {
-
 
 }
 
