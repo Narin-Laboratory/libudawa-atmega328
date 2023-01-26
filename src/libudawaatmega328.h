@@ -60,7 +60,7 @@ class libudawaatmega328
 
 libudawaatmega328::libudawaatmega328()
 {
-
+  RGBLed led(configcomcu.pinLedR, configcomcu.pinLedG, configcomcu.pinLedB, RGBLed::COMMON_CATHODE);
 }
 
 void libudawaatmega328::begin()
@@ -208,6 +208,7 @@ int libudawaatmega328::getPin(StaticJsonDocument<DOCSIZE> &doc)
 
 void libudawaatmega328::setRgbLed(StaticJsonDocument<DOCSIZE> &doc)
 {
+
 
 }
 
