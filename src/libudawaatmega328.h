@@ -12,6 +12,7 @@
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
 #include "EasyBuzzer.h"
+#include "RGBLed.h"
 
 #ifndef DOCSIZE
   #define DOCSIZE 128
