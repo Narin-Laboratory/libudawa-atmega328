@@ -30,8 +30,6 @@ struct Led
   uint16_t blinkDelay;
   uint32_t lastRun;
   uint8_t lastState = 1;
-  uint8_t off = 255;
-  uint8_t on = 0;
 };
 
 struct Buzzer
@@ -51,6 +49,7 @@ struct ConfigCoMCU
   uint8_t pinLedR = 3;
   uint8_t pinLedG = 5;
   uint8_t pinLedB = 6;
+  uint8_t ledON = 255;
 };
 
 class libudawaatmega328
@@ -100,6 +99,9 @@ void libudawaatmega328::begin()
 void libudawaatmega328::execute()
 {
   EasyBuzzer.update();
+  runBuzzer();
+  runRgbLed();
+  runPanic();
 }
 
 void libudawaatmega328::coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc)
@@ -236,8 +238,6 @@ void libudawaatmega328::setRgbLed(StaticJsonDocument<DOCSIZE> &doc)
   _rgb.isBlink = doc["params"]["isBlink"].as<uint8_t>();
   _rgb.blinkCount = doc["params"]["blinkCount"].as<uint16_t>();
   _rgb.blinkDelay = doc["params"]["blinkDelay"].as<uint16_t>();
-  _rgb.off = doc["params"]["off"].as<uint8_t>();
-  _rgb.on = doc["params"]["on"].as<uint8_t>();
 }
 
 void libudawaatmega328::setBuzzer(StaticJsonDocument<DOCSIZE>& doc)
@@ -264,9 +264,9 @@ void libudawaatmega328::runRgbLed()
       _rgb.blinkCount--;
     }
     else{
-      analogWrite(config.pinLedR, _rgb.off);
-      analogWrite(config.pinLedG, _rgb.off);
-      analogWrite(config.pinLedB, _rgb.off);
+      analogWrite(config.pinLedR, !config.ledON);
+      analogWrite(config.pinLedG, !config.ledON);
+      analogWrite(config.pinLedB, !config.ledON);
     }
 
     _rgb.lastState = !_rgb.lastState;
@@ -289,6 +289,22 @@ void libudawaatmega328::runBuzzer()
 
     _buzzer.lastState = !_buzzer.lastState;
     _buzzer.lastRun = now;
+  }
+}
+
+void libudawaatmega328::runPanic()
+{
+  if(config.fPanic)
+  {
+    _rgb.r = 255;
+    _rgb.g = 0;
+    _rgb.b = 0;
+    _rgb.isBlink = 1;
+    _rgb.blinkCount = 10;
+    _rgb.blinkDelay = 100;
+
+    _buzzer.beepCount = 10;
+    _buzzer.beepDelay = 100;
   }
 }
 
