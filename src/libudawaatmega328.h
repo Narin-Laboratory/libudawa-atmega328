@@ -12,7 +12,6 @@
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
 #include "EasyBuzzer.h"
-#include "RGBLed.h"
 
 #ifndef DOCSIZE
   #define DOCSIZE 128
@@ -20,6 +19,28 @@
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 #define COMPILED __DATE__ " " __TIME__
 #define BOARD "nanoatmega328new"
+
+struct Led
+{
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  bool isBlink;
+  uint16_t blinkCount;
+  uint16_t blinkDelay;
+  uint32_t lastRun;
+  uint8_t lastState = 1;
+  uint8_t off = 255;
+  uint8_t on = 0;
+};
+
+struct Buzzer
+{
+  uint16_t beepCount;
+  uint16_t beepDelay;
+  uint32_t lastRun;
+  bool lastState;
+};
 
 struct ConfigCoMCU
 {
@@ -40,22 +61,25 @@ class libudawaatmega328
     void execute();
     int getFreeHeap(uint16_t min,uint16_t max);
     int getFreeHeap();
-    void setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc);
+    void setConfig(StaticJsonDocument<DOCSIZE> &doc);
     void setPin(StaticJsonDocument<DOCSIZE> &doc);
     int getPin(StaticJsonDocument<DOCSIZE> &doc);
     void setRgbLed(StaticJsonDocument<DOCSIZE> &doc);
     void setBuzzer(StaticJsonDocument<DOCSIZE> &doc);
     void serialWriteToESP32(StaticJsonDocument<DOCSIZE> &doc);
     StaticJsonDocument<DOCSIZE> serialReadFromESP32();
-    void setPanic(StaticJsonDocument<DOCSIZE> &doc);
+    void runRgbLed();
+    void runBuzzer();
+    void runPanic();
     void coMCUGetInfo(StaticJsonDocument<DOCSIZE> &doc);
     void serialHandler(StaticJsonDocument<DOCSIZE> &doc);
-    ConfigCoMCU configcomcu;
-    RGBLed led;
+    ConfigCoMCU config;
 
   private:
     bool _toBoolean(String &value);
     void _serialCommandHandler(HardwareSerial &serial);
+    Led _rgb;
+    Buzzer _buzzer;
 };
 
 
@@ -70,8 +94,7 @@ void libudawaatmega328::begin()
   Serial.begin(115200);
   Serial.setTimeout(30000);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-  EasyBuzzer.setPin(configcomcu.pinBuzzer);
-  led.begin(configcomcu.pinLedR,configcomcu.pinLedG,configcomcu.pinLedB, RGBLed::COMMON_CATHODE);
+  EasyBuzzer.setPin(config.pinBuzzer);
 }
 
 void libudawaatmega328::execute()
@@ -138,7 +161,7 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
       }
       else if(strcmp(method, (const char*) "sCfg") == 0)
       {
-        setConfigCoMCU(doc);
+        setConfig(doc);
       }
       else if(strcmp(method, (const char*) "sLed") == 0)
       {
@@ -156,29 +179,25 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
       {
         getPin(doc);
       }
-      else if(strcmp(method, (const char*) "sPnc") == 0)
-      {
-        setPanic(doc);
-      }
       //serializeJsonPretty(doc, Serial);
     }
   }
   return doc;
 }
 
-void libudawaatmega328::setConfigCoMCU(StaticJsonDocument<DOCSIZE> &doc)
+void libudawaatmega328::setConfig(StaticJsonDocument<DOCSIZE> &doc)
 {
-  if(doc["fPanic"] != nullptr){configcomcu.fPanic = doc["fPanic"].as<bool>();}
+  if(doc["fPanic"] != nullptr){config.fPanic = doc["fPanic"].as<uint8_t>();}
 
-  if(doc["bfreq"] != nullptr){configcomcu.bfreq = doc["bfreq"].as<uint16_t>();}
-  if(doc["fBuzz"] != nullptr){configcomcu.fBuzz = doc["fBuzz"].as<bool>();}
+  if(doc["bfreq"] != nullptr){config.bfreq = doc["bfreq"].as<uint16_t>();}
+  if(doc["fBuzz"] != nullptr){config.fBuzz = doc["fBuzz"].as<uint8_t>();}
 
-  if(doc["pinBuzzer"] != nullptr){configcomcu.pinBuzzer = doc["pinBuzzer"].as<uint8_t>();}
-  if(doc["pinLedR"] != nullptr){configcomcu.pinLedR = doc["pinLedR"].as<uint8_t>();}
-  if(doc["pinLedG"] != nullptr){configcomcu.pinLedG = doc["pinLedG"].as<uint8_t>();}
-  if(doc["pinLedB"] != nullptr){configcomcu.pinLedB = doc["pinLedB"].as<uint8_t>();}
+  if(doc["pinBuzzer"] != nullptr){config.pinBuzzer = doc["pinBuzzer"].as<uint8_t>();}
+  if(doc["pinLedR"] != nullptr){config.pinLedR = doc["pinLedR"].as<uint8_t>();}
+  if(doc["pinLedG"] != nullptr){config.pinLedG = doc["pinLedG"].as<uint8_t>();}
+  if(doc["pinLedB"] != nullptr){config.pinLedB = doc["pinLedB"].as<uint8_t>();}
 
-  EasyBuzzer.setPin(configcomcu.pinBuzzer);
+  EasyBuzzer.setPin(config.pinBuzzer);
 }
 
 void libudawaatmega328::setPin(StaticJsonDocument<DOCSIZE> &doc)
@@ -211,40 +230,65 @@ int libudawaatmega328::getPin(StaticJsonDocument<DOCSIZE> &doc)
 
 void libudawaatmega328::setRgbLed(StaticJsonDocument<DOCSIZE> &doc)
 {
-
+  _rgb.r = doc["params"]["r"].as<uint8_t>();
+  _rgb.g = doc["params"]["g"].as<uint8_t>();
+  _rgb.b = doc["params"]["b"].as<uint8_t>();
+  _rgb.isBlink = doc["params"]["isBlink"].as<uint8_t>();
+  _rgb.blinkCount = doc["params"]["blinkCount"].as<uint16_t>();
+  _rgb.blinkDelay = doc["params"]["blinkDelay"].as<uint16_t>();
+  _rgb.off = doc["params"]["off"].as<uint8_t>();
+  _rgb.on = doc["params"]["on"].as<uint8_t>();
 }
 
 void libudawaatmega328::setBuzzer(StaticJsonDocument<DOCSIZE>& doc)
 {
-  if(doc["st"].as<uint8_t>() == 1){
-    EasyBuzzer.beep(
-      configcomcu.bfreq,		// Frequency in hertz(HZ).
-      doc["on"].as<uint32_t>(), 	// On Duration in milliseconds(ms).
-      doc["of"].as<uint32_t>(), 	// Off Duration in milliseconds(ms).
-      doc["bp"].as<uint32_t>(), 	// The number of beeps per cycle.
-      doc["ps"].as<uint32_t>(), 	// Pause duration.
-      doc["cy"].as<uint32_t>() 		// The number of cycle.
-    );
-  }else{
-    EasyBuzzer.stopBeep();
+  _buzzer.beepCount = doc["params"]["beepCount"].as<uint16_t>();
+  _buzzer.beepDelay = doc["params"]["beepDelay"].as<uint16_t>();
+}
+
+void libudawaatmega328::runRgbLed()
+{
+  uint32_t now = millis();
+  if(!_rgb.isBlink)
+  {
+    analogWrite(config.pinLedR, _rgb.r);
+    analogWrite(config.pinLedG, _rgb.g);
+    analogWrite(config.pinLedB, _rgb.b);
+  }
+  else if(_rgb.blinkCount > 0 && now - _rgb.lastRun > _rgb.blinkDelay){
+    if(_rgb.lastState == 1){
+      analogWrite(config.pinLedR, _rgb.r);
+      analogWrite(config.pinLedG, _rgb.g);
+      analogWrite(config.pinLedB, _rgb.b);
+
+      _rgb.blinkCount--;
+    }
+    else{
+      analogWrite(config.pinLedR, _rgb.off);
+      analogWrite(config.pinLedG, _rgb.off);
+      analogWrite(config.pinLedB, _rgb.off);
+    }
+
+    _rgb.lastState = !_rgb.lastState;
+    _rgb.lastRun = now;
   }
 }
 
-
-void libudawaatmega328::setPanic(StaticJsonDocument<DOCSIZE> &doc)
+void libudawaatmega328::runBuzzer()
 {
-  configcomcu.fPanic = doc["params"]["state"].as<bool>();
-  if(configcomcu.fPanic){
-    EasyBuzzer.beep(
-      configcomcu.bfreq,		// Frequency in hertz(HZ).
-      100, 	// On Duration in milliseconds(ms).
-      100, 	// Off Duration in milliseconds(ms).
-      2, 			// The number of beeps per cycle.
-      100, 	// Pause duration.
-      0 		// The number of cycle.
-    );
-  }else{
-    EasyBuzzer.stopBeep();
+  uint32_t now = millis();
+  if(_buzzer.beepCount > 0 && now - _buzzer.lastRun > _buzzer.beepDelay)
+  {
+    if(_buzzer.lastState == 1){
+      tone(config.pinBuzzer, config.bfreq, _buzzer.beepDelay);
+      _buzzer.beepCount--;
+    }
+    else{
+      noTone(config.pinBuzzer);
+    }
+
+    _buzzer.lastState = !_buzzer.lastState;
+    _buzzer.lastRun = now;
   }
 }
 
