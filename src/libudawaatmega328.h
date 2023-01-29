@@ -199,6 +199,8 @@ void libudawaatmega328::setConfig(StaticJsonDocument<DOCSIZE> &doc)
   if(doc["pinLedG"] != nullptr){config.pinLedG = doc["pinLedG"].as<uint8_t>();}
   if(doc["pinLedB"] != nullptr){config.pinLedB = doc["pinLedB"].as<uint8_t>();}
 
+  if(doc["ledON"] != nullptr){config.ledON = doc["ledON"].as<uint8_t>();}
+
   EasyBuzzer.setPin(config.pinBuzzer);
 }
 
@@ -264,9 +266,9 @@ void libudawaatmega328::runRgbLed()
       _rgb.blinkCount--;
     }
     else{
-      analogWrite(config.pinLedR, !config.ledON);
-      analogWrite(config.pinLedG, !config.ledON);
-      analogWrite(config.pinLedB, !config.ledON);
+      analogWrite(config.pinLedR, config.ledON == 0 ? 255 : 0);
+      analogWrite(config.pinLedG, config.ledON == 0 ? 255 : 0);
+      analogWrite(config.pinLedB, config.ledON == 0 ? 255 : 0);
     }
 
     _rgb.lastState = !_rgb.lastState;
@@ -296,9 +298,9 @@ void libudawaatmega328::runPanic()
 {
   if(config.fPanic)
   {
-    _rgb.r = 255;
-    _rgb.g = 0;
-    _rgb.b = 0;
+    _rgb.r = config.ledON;
+    _rgb.g = config.ledON == 0 ? 255 : 0;
+    _rgb.b = config.ledON == 0 ? 255 : 0;
     _rgb.isBlink = 1;
     _rgb.blinkCount = 10;
     _rgb.blinkDelay = 100;
