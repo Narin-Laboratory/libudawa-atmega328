@@ -26,7 +26,7 @@ struct Led
   uint8_t g;
   uint8_t b;
   bool isBlink;
-  uint16_t blinkCount;
+  int32_t blinkCount;
   uint16_t blinkDelay;
   uint32_t lastRun;
   uint8_t lastState = 1;
@@ -34,7 +34,7 @@ struct Led
 
 struct Buzzer
 {
-  uint16_t beepCount;
+  int32_t beepCount;
   uint16_t beepDelay;
   uint32_t lastRun;
   bool lastState;
@@ -238,13 +238,13 @@ void libudawaatmega328::setRgbLed(StaticJsonDocument<DOCSIZE> &doc)
   _rgb.g = doc["params"]["g"].as<uint8_t>();
   _rgb.b = doc["params"]["b"].as<uint8_t>();
   _rgb.isBlink = doc["params"]["isBlink"].as<uint8_t>();
-  _rgb.blinkCount = doc["params"]["blinkCount"].as<uint16_t>();
+  _rgb.blinkCount = doc["params"]["blinkCount"].as<int32_t>();
   _rgb.blinkDelay = doc["params"]["blinkDelay"].as<uint16_t>();
 }
 
 void libudawaatmega328::setBuzzer(StaticJsonDocument<DOCSIZE>& doc)
 {
-  _buzzer.beepCount = doc["params"]["beepCount"].as<uint16_t>();
+  _buzzer.beepCount = doc["params"]["beepCount"].as<int32_t>();
   _buzzer.beepDelay = doc["params"]["beepDelay"].as<uint16_t>();
 }
 
@@ -274,6 +274,21 @@ void libudawaatmega328::runRgbLed()
     _rgb.lastState = !_rgb.lastState;
     _rgb.lastRun = now;
   }
+  else if(_rgb.blinkCount == -1 && now - _rgb.lastRun > _rgb.blinkDelay){
+    if(_rgb.lastState == 1){
+      analogWrite(config.pinLedR, _rgb.r);
+      analogWrite(config.pinLedG, _rgb.g);
+      analogWrite(config.pinLedB, _rgb.b);
+    }
+    else{
+      analogWrite(config.pinLedR, config.ledON == 0 ? 255 : 0);
+      analogWrite(config.pinLedG, config.ledON == 0 ? 255 : 0);
+      analogWrite(config.pinLedB, config.ledON == 0 ? 255 : 0);
+    }
+
+    _rgb.lastState = !_rgb.lastState;
+    _rgb.lastRun = now;
+  }
 }
 
 void libudawaatmega328::runBuzzer()
@@ -284,6 +299,18 @@ void libudawaatmega328::runBuzzer()
     if(_buzzer.lastState == 1){
       tone(config.pinBuzzer, config.bfreq, _buzzer.beepDelay);
       _buzzer.beepCount--;
+    }
+    else{
+      noTone(config.pinBuzzer);
+    }
+
+    _buzzer.lastState = !_buzzer.lastState;
+    _buzzer.lastRun = now;
+  }
+  else if(_buzzer.beepCount == -1 && now - _buzzer.lastRun > _buzzer.beepDelay)
+  {
+    if(_buzzer.lastState == 1){
+      tone(config.pinBuzzer, config.bfreq, _buzzer.beepDelay);
     }
     else{
       noTone(config.pinBuzzer);
