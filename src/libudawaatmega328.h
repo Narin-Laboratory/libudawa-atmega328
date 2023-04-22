@@ -42,14 +42,14 @@ struct Buzzer
 
 struct ConfigCoMCU
 {
-  bool fPanic = false;
-  uint16_t bfreq = 1600;
-  bool fBuzz = true;
-  uint8_t pinBuzzer = 2;
-  uint8_t pinLedR = 3;
-  uint8_t pinLedG = 5;
-  uint8_t pinLedB = 6;
-  uint8_t ledON = 255;
+  bool fP = false;
+  uint16_t bFr = 1600;
+  bool fB = true;
+  uint8_t pBz = 2;
+  uint8_t pLR = 3;
+  uint8_t pLG = 5;
+  uint8_t pLB = 6;
+  uint8_t lON = 255;
 };
 
 class libudawaatmega328
@@ -93,7 +93,7 @@ void libudawaatmega328::begin()
   Serial.begin(115200);
   Serial.setTimeout(30000);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-  EasyBuzzer.setPin(config.pinBuzzer);
+  EasyBuzzer.setPin(config.pBz);
 }
 
 void libudawaatmega328::execute()
@@ -189,19 +189,19 @@ StaticJsonDocument<DOCSIZE> libudawaatmega328::serialReadFromESP32()
 
 void libudawaatmega328::setConfig(StaticJsonDocument<DOCSIZE> &doc)
 {
-  if(doc["fPanic"] != nullptr){config.fPanic = doc["fPanic"].as<uint8_t>();}
+  if(doc["fP"] != nullptr){config.fP = doc["fP"].as<uint8_t>();}
 
-  if(doc["bfreq"] != nullptr){config.bfreq = doc["bfreq"].as<uint16_t>();}
-  if(doc["fBuzz"] != nullptr){config.fBuzz = doc["fBuzz"].as<uint8_t>();}
+  if(doc["bFr"] != nullptr){config.bFr = doc["bFr"].as<uint16_t>();}
+  if(doc["fB"] != nullptr){config.fB = doc["fB"].as<uint8_t>();}
 
-  if(doc["pinBuzzer"] != nullptr){config.pinBuzzer = doc["pinBuzzer"].as<uint8_t>();}
-  if(doc["pinLedR"] != nullptr){config.pinLedR = doc["pinLedR"].as<uint8_t>();}
-  if(doc["pinLedG"] != nullptr){config.pinLedG = doc["pinLedG"].as<uint8_t>();}
-  if(doc["pinLedB"] != nullptr){config.pinLedB = doc["pinLedB"].as<uint8_t>();}
+  if(doc["pBz"] != nullptr){config.pBz = doc["pBz"].as<uint8_t>();}
+  if(doc["pLR"] != nullptr){config.pLR = doc["pLR"].as<uint8_t>();}
+  if(doc["pLG"] != nullptr){config.pLG = doc["pLG"].as<uint8_t>();}
+  if(doc["pLB"] != nullptr){config.pLB = doc["pLB"].as<uint8_t>();}
 
-  if(doc["ledON"] != nullptr){config.ledON = doc["ledON"].as<uint8_t>();}
+  if(doc["lON"] != nullptr){config.lON = doc["lON"].as<uint8_t>();}
 
-  EasyBuzzer.setPin(config.pinBuzzer);
+  EasyBuzzer.setPin(config.pBz);
 }
 
 void libudawaatmega328::setPin(StaticJsonDocument<DOCSIZE> &doc)
@@ -253,22 +253,22 @@ void libudawaatmega328::runRgbLed()
   uint32_t now = millis();
   if(!_rgb.isBlink)
   {
-    analogWrite(config.pinLedR, _rgb.r);
-    analogWrite(config.pinLedG, _rgb.g);
-    analogWrite(config.pinLedB, _rgb.b);
+    analogWrite(config.pLR, _rgb.r);
+    analogWrite(config.pLG, _rgb.g);
+    analogWrite(config.pLB, _rgb.b);
   }
   else if(_rgb.blinkCount > 0 && now - _rgb.lastRun > _rgb.blinkDelay){
     if(_rgb.lastState == 1){
-      analogWrite(config.pinLedR, _rgb.r);
-      analogWrite(config.pinLedG, _rgb.g);
-      analogWrite(config.pinLedB, _rgb.b);
+      analogWrite(config.pLR, _rgb.r);
+      analogWrite(config.pLG, _rgb.g);
+      analogWrite(config.pLB, _rgb.b);
 
       _rgb.blinkCount--;
     }
     else{
-      analogWrite(config.pinLedR, config.ledON == 0 ? 255 : 0);
-      analogWrite(config.pinLedG, config.ledON == 0 ? 255 : 0);
-      analogWrite(config.pinLedB, config.ledON == 0 ? 255 : 0);
+      analogWrite(config.pLR, config.lON == 0 ? 255 : 0);
+      analogWrite(config.pLG, config.lON == 0 ? 255 : 0);
+      analogWrite(config.pLB, config.lON == 0 ? 255 : 0);
     }
 
     _rgb.lastState = !_rgb.lastState;
@@ -276,14 +276,14 @@ void libudawaatmega328::runRgbLed()
   }
   else if(_rgb.blinkCount == -1 && now - _rgb.lastRun > _rgb.blinkDelay){
     if(_rgb.lastState == 1){
-      analogWrite(config.pinLedR, _rgb.r);
-      analogWrite(config.pinLedG, _rgb.g);
-      analogWrite(config.pinLedB, _rgb.b);
+      analogWrite(config.pLR, _rgb.r);
+      analogWrite(config.pLG, _rgb.g);
+      analogWrite(config.pLB, _rgb.b);
     }
     else{
-      analogWrite(config.pinLedR, config.ledON == 0 ? 255 : 0);
-      analogWrite(config.pinLedG, config.ledON == 0 ? 255 : 0);
-      analogWrite(config.pinLedB, config.ledON == 0 ? 255 : 0);
+      analogWrite(config.pLR, config.lON == 0 ? 255 : 0);
+      analogWrite(config.pLG, config.lON == 0 ? 255 : 0);
+      analogWrite(config.pLB, config.lON == 0 ? 255 : 0);
     }
 
     _rgb.lastState = !_rgb.lastState;
@@ -297,11 +297,11 @@ void libudawaatmega328::runBuzzer()
   if(_buzzer.beepCount > 0 && now - _buzzer.lastRun > _buzzer.beepDelay)
   {
     if(_buzzer.lastState == 1){
-      tone(config.pinBuzzer, config.bfreq, _buzzer.beepDelay);
+      tone(config.pBz, config.bFr, _buzzer.beepDelay);
       _buzzer.beepCount--;
     }
     else{
-      noTone(config.pinBuzzer);
+      noTone(config.pBz);
     }
 
     _buzzer.lastState = !_buzzer.lastState;
@@ -310,10 +310,10 @@ void libudawaatmega328::runBuzzer()
   else if(_buzzer.beepCount == -1 && now - _buzzer.lastRun > _buzzer.beepDelay)
   {
     if(_buzzer.lastState == 1){
-      tone(config.pinBuzzer, config.bfreq, _buzzer.beepDelay);
+      tone(config.pBz, config.bFr, _buzzer.beepDelay);
     }
     else{
-      noTone(config.pinBuzzer);
+      noTone(config.pBz);
     }
 
     _buzzer.lastState = !_buzzer.lastState;
@@ -323,11 +323,11 @@ void libudawaatmega328::runBuzzer()
 
 void libudawaatmega328::runPanic()
 {
-  if(config.fPanic)
+  if(config.fP)
   {
-    _rgb.r = config.ledON;
-    _rgb.g = config.ledON == 0 ? 255 : 0;
-    _rgb.b = config.ledON == 0 ? 255 : 0;
+    _rgb.r = config.lON;
+    _rgb.g = config.lON == 0 ? 255 : 0;
+    _rgb.b = config.lON == 0 ? 255 : 0;
     _rgb.isBlink = 1;
     _rgb.blinkCount = 10;
     _rgb.blinkDelay = 100;
